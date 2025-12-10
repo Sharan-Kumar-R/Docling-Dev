@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocGenie</title>
+    <link rel="stylesheet" href="/static/style.css?v=11">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code&display=swap"
+        rel="stylesheet">
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--bg-primary);
+            padding: 2rem;
+            border-radius: 8px;
+            width: 300px;
+            border: 1px solid var(--border-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .settings-trigger {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+
+        .btn.secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn.small {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+            margin-left: 0.2rem;
+        }
+
+        .structure-tree {
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .structure-item {
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+
+        .structure-item:hover {
+            color: var(--accent-color);
+        }
+
+        .level-1 {
+            font-weight: bold;
+        }
+
+        .level-2 {
+            padding-left: 1rem;
+        }
+
+        .level-3 {
+            padding-left: 2rem;
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .chat-message.user {
+            background: var(--bg-secondary);
+            text-align: right;
+        }
+
+        .chat-message.system {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .chat-message.ai {
+            background: var(--border-color);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-left" style="display: flex; align-items: center; gap: 1rem;">
+            <button id="sidebarToggle" class="btn secondary small"
+                style="border: none; font-size: 1.2rem; padding: 0.5rem;">
+                ☰
+            </button>
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <path d="M12 18v-6" />
+                    <path d="M8 15l4 4 4-4" />
+                </svg>
+                DocGenie
+            </div>
+        </div>
+        <div class="actions" style="display: flex; align-items: center; gap: 1rem;">
+            <button id="settingsIcon" class="btn secondary small" style="border: none; padding: 0.5rem;"
+                title="Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
+                    class="icon-svg">
+                    <path
+                        d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                </svg>
+            </button>
+            <button class="btn" id="resetBtn" style="display: none;">New Document</button>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <button class="btn full-width" id="newChatBtn">
+                    <span class="icon-span">
+                        <!-- New Chat Icon (Edit) -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon-svg" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </span>
+                    <span class="text-span">New Chat</span>
+                </button>
+            </div>
+            <div class="sidebar-search">
+                <div class="search-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="search-icon-svg" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Search chats">
+                </div>
+            </div>
+            <div class="sidebar-content">
+                <div class="section-label">YOUR CHATS</div>
+                <div id="sessionList" class="session-list">
+                    <!-- Sessions will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Theme Settings Modal -->
+            <div id="themeModal" class="modal hidden">
+                <div class="modal-content">
+                    <h3 style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                            fill="currentColor" class="icon-svg">
+                            <path
+                                d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                        </svg>
+                        Theme Settings
+                    </h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">Choose your
+                        preferred theme</p>
+
+                    <div class="theme-options">
+                        <div class="theme-option" data-theme="dark">
+                            <input type="radio" name="theme" value="dark" id="darkTheme" checked>
+                            <label for="darkTheme">
+                                <div class="theme-preview dark-preview">
+                                    <div class="preview-header"></div>
+                                    <div class="preview-content"></div>
+                                </div>
+                                <div class="theme-label">
+                                    <span class="theme-icon">🌙</span>
+                                    <span class="theme-name">Dark Mode</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="theme-option" data-theme="light">
+                            <input type="radio" name="theme" value="light" id="lightTheme">
+                            <label for="lightTheme">
+                                <div class="theme-preview light-preview">
+                                    <div class="preview-header"></div>
+                                    <div class="preview-content"></div>
+                                </div>
+                                <div class="theme-label">
+                                    <span class="theme-icon">☀️</span>
+                                    <span class="theme-name">Light Mode</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button class="btn" onclick="closeThemeModal()" style="margin-top: 1.5rem; width: 100%;">Apply &
+                        Close</button>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section" id="uploadSection">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <div class="icon">📄</div>
+                        <h3>Drag & Drop your document here</h3>
+                        <p style="color: var(--text-secondary); margin-top: 0.5rem;">or click to browse (PDF, DOCX,
+                            PPTX,
+                            HTML, Images)</p>
+                        <input type="file" id="fileInput" accept=".pdf,.docx,.pptx,.html,.htm,.png,.jpg,.jpeg" multiple
+                            style="display: none;">
+                        <label for="fileInput" class="btn" style="display: inline-block; cursor: pointer;">Select
+                            File</label>
+                    </div>
+
+                    <!-- Upload Progress Bar -->
+                    <div id="uploadProgress" class="upload-progress hidden">
+                        <div class="progress-info">
+                            <span class="progress-text">Uploading...</span>
+                            <span class="progress-percentage">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="progressBarFill"></div>
+                        </div>
+                    </div>
+
+                    <div class="loading-state hidden" id="loadingState">
+                        <div class="loader"></div>
+                        <p>Processing with Docling...</p>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary);">Extracting layout, tables, and text
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Convert Options (Moved Outside Drop Zone) -->
+                <div class="convert-options"
+                    style="margin-top: 1rem; display: flex; gap: 1.5rem; justify-content: center; font-size: 0.9rem; color: var(--text-secondary);">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="ocrOption"> Enable OCR
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="tableOption" checked> Extract Tables
+                    </label>
+                </div>
+            </div>
+
+            <!-- Results Section (Split View) -->
+            <div class="split-view hidden" id="resultsSection">
+                <!-- Structure Pane (TOC) -->
+                <div class="pane" id="pane-structure"
+                    style="border-right: 1px solid var(--border-color); width: 20%; min-width: 150px;">
+                    <div class="pane-header">
+                        <span>Structure</span>
+                    </div>
+                    <div class="pane-content">
+                        <div id="fileList" class="file-list"
+                            style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                        </div>
+                        <div id="structureOutput" class="structure-tree"></div>
+                    </div>
+                </div>
+
+                <div class="resizer" id="resizerStructure"></div>
+
+                <!-- Markdown Output Pane -->
+                <div class="pane grow" id="pane-output" style="min-width: 200px;">
+                    <div class="pane-header">
+                        <span>Docling Output</span>
+                        <div class="actions">
+                            <button class="btn small" onclick="viewOriginalFile()"
+                                title="View Original File">View</button>
+                            <button class="btn small" onclick="downloadOutput('markdown')">MD</button>
+                            <button class="btn small" onclick="downloadOutput('json')">JSON</button>
+                            <button class="btn small" onclick="downloadOutput('html')">HTML</button>
+                            <button class="btn small" onclick="copyMarkdown()">Copy</button>
+                        </div>
+                    </div>
+                    <div class="pane-content">
+                        <div id="markdownOutput" class="markdown-body"></div>
+                    </div>
+                </div>
+
+                <div class="resizer" id="resizerChat"></div>
+
+                <!-- Chat Pane -->
+                <div class="pane" id="pane-chat"
+                    style="border-left: 1px solid var(--border-color); width: 25%; min-width: 200px; display: flex; flex-direction: column;">
+                    <div class="pane-header">
+                        <span>Chat with Document</span>
+                    </div>
+                    <div class="pane-content" style="flex: 1; display: flex; flex-direction: column; padding: 0;">
+                        <div id="chatHistory" class="chat-history" style="flex: 1; overflow-y: auto; padding: 1rem;">
+                            <div class="chat-message system">
+                                Ask questions about your document!
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <textarea id="chatInput" class="chat-input" placeholder="Type your question..."></textarea>
+                            <button class="btn" onclick="sendChat()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

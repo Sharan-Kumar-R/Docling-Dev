@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+docling
+groq
+python-dotenv
+python-multipart
+chonkie
+jinja2
+aiofiles
+pydantic
+chromadb
+sentence-transformers
