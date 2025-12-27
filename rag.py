@@ -18,7 +18,8 @@ class RAGEngine:
         self.model = "llama-3.3-70b-versatile"
         
         # Initialize Chonkie TokenChunker
-        self.chunker = TokenChunker(chunk_size=512, chunk_overlap=64) # Smaller chunks for better embedding precision
+        # Model max_seq_length is 256. Using 256 ensures no truncation by the embedder.
+        self.chunker = TokenChunker(chunk_size=256, chunk_overlap=30)
 
         # Initialize ChromaDB (Persistent)
         self.chroma_client = chromadb.PersistentClient(path="chroma_db")
