@@ -2,7 +2,7 @@
 
 A modern, AI-powered document analysis and chat application built with FastAPI and vanilla JavaScript. Upload documents (PDF, DOCX, PPTX, HTML, images) and interact with them using natural language queries powered by RAG (Retrieval-Augmented Generation).
 
-![DocGenie](Docling.png)
+![DocGenie](DocGenie.png)
 
 ## ✨ Features
 
@@ -264,4 +264,5 @@ Clean, accessible interface with optimized contrast.
 ---
 
 **Made with ❤️ by Sharan Kumar R**
+
 
